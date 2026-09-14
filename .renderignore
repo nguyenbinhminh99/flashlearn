@@ -1,0 +1,17 @@
+# Render uses this instead of .gitignore when uploading the build.
+# Do NOT ignore dist/ — Nest build output must exist at runtime.
+
+node_modules/
+**/node_modules/
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+coverage/
+*.log
+.DS_Store
+
+# Frontend build artifacts (API service does not need these)
+apps/web/dist/
+apps/web/node_modules/

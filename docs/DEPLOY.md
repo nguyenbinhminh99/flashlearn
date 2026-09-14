@@ -65,6 +65,8 @@ Giữ chuỗi này — sẽ dán vào Render.
 | Start Command | `npm run start:migrate` |
 | Instance | **Free** |
 
+> **Lưu ý:** Repo có file [`.renderignore`](../.renderignore) để Render **không** xóa thư mục `dist/` (Nest build). Nếu thiếu file này, start sẽ lỗi `Cannot find module .../dist/main`.
+
 4. **Environment** → thêm biến:
 
 | Key | Value |
@@ -145,6 +147,7 @@ Sau đó mở site Vercel → Đăng nhập bằng tài khoản demo.
 | Vite/local `ECONNREFUSED` | Chạy `npm run start:dev` trong `apps/api` |
 | Vercel gọi API lỗi CORS | `FRONTEND_URL` trên Render phải khớp domain Vercel (https, không slash thừa) |
 | API Render chậm lần đầu | Free tier **sleep** ~15 phút không ai dùng; đợi 30–60s |
+| `Cannot find module .../dist/main` | Thiếu `.renderignore` (Render bỏ `dist/` vì `.gitignore`). Push lại repo rồi **Manual Deploy** |
 | `/api/categories` 404 | Thiếu prefix: URL phải là `...onrender.com/api/...` |
 | Prisma migrate fail | Kiểm tra `DATABASE_URL` có `sslmode=require` |
 | Login được nhưng trắng trang | Sai `VITE_API_URL` (thiếu `/api` hoặc dùng HTTP thay HTTPS) |
