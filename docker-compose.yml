@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flashlearn-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: flashlearn
+      POSTGRES_PASSWORD: flashlearn
+      POSTGRES_DB: flashlearn
+    volumes:
+      - flashlearn_pgdata:/var/lib/postgresql/data
+
+volumes:
+  flashlearn_pgdata:

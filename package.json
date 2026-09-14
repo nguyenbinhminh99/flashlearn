@@ -1,0 +1,13 @@
+{
+  "name": "flashlearn",
+  "private": true,
+  "version": "1.0.0",
+  "description": "FlashLearn – Study Set & Flashcard platform",
+  "scripts": {
+    "dev:api": "npm run start:dev --prefix apps/api",
+    "dev:web": "npm run dev --prefix apps/web",
+    "db:up": "docker compose up -d",
+    "db:migrate": "npm run prisma:migrate --prefix apps/api",
+    "db:seed": "npm run prisma:seed --prefix apps/api"
+  }
+}
