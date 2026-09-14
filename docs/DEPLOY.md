@@ -147,7 +147,7 @@ Sau đó mở site Vercel → Đăng nhập bằng tài khoản demo.
 | Vite/local `ECONNREFUSED` | Chạy `npm run start:dev` trong `apps/api` |
 | Vercel gọi API lỗi CORS | `FRONTEND_URL` trên Render phải khớp domain Vercel (https, không slash thừa) |
 | API Render chậm lần đầu | Free tier **sleep** ~15 phút không ai dùng; đợi 30–60s |
-| `Cannot find module .../dist/main` | Thiếu `.renderignore` (Render bỏ `dist/` vì `.gitignore`). Push lại repo rồi **Manual Deploy** |
+| `Cannot find module .../dist/main` | Nest từng build ra `dist/src/main.js`. Cần `tsconfig.build.json` có `rootDir: ./src`. Clear cache Render rồi redeploy |
 | `/api/categories` 404 | Thiếu prefix: URL phải là `...onrender.com/api/...` |
 | Prisma migrate fail | Kiểm tra `DATABASE_URL` có `sslmode=require` |
 | Login được nhưng trắng trang | Sai `VITE_API_URL` (thiếu `/api` hoặc dùng HTTP thay HTTPS) |
