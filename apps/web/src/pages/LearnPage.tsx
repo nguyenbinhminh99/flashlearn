@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import type { Flashcard, StudySetDetail } from '../types';
+
+interface StudyProgress {
+  readonly currentIndex: number;
+  readonly completedIds: string[];
+}
 
 function shuffle<T>(items: readonly T[]): T[] {
   const copy = [...items];
@@ -16,6 +22,7 @@ function shuffle<T>(items: readonly T[]): T[] {
 
 export function LearnPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [index, setIndex] = useState(0);
@@ -23,23 +30,68 @@ export function LearnPage() {
   const [finished, setFinished] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [resumed, setResumed] = useState(false);
+
+  const hasLoadedProgress = useRef(false);
 
   useEffect(() => {
     if (!id) {
       return;
     }
+    hasLoadedProgress.current = false;
     void (async () => {
       try {
         const { data } = await api.get<StudySetDetail>(`/study-sets/${id}`);
         setTitle(data.title);
         setCards(data.flashcards);
+
+        if (user) {
+          try {
+            const { data: progress } = await api.get<StudyProgress>(
+              `/study-sets/${id}/progress`,
+            );
+            if (progress.currentIndex > 0 || progress.completedIds.length > 0) {
+              const safeIndex = Math.min(
+                progress.currentIndex,
+                Math.max(data.flashcards.length - 1, 0),
+              );
+              setIndex(safeIndex);
+              setCompletedIds(new Set(progress.completedIds));
+              setResumed(true);
+            }
+          } catch {
+            // Không có tiến độ lưu trước đó hoặc lỗi tải — bắt đầu từ đầu.
+          }
+        }
       } catch {
         setError('Không tải được bộ thẻ để học.');
       } finally {
         setLoading(false);
+        hasLoadedProgress.current = true;
       }
     })();
-  }, [id]);
+  }, [id, user]);
+
+  function persistProgress(nextIndex: number, nextCompleted: Set<string>): void {
+    if (!user || !id || !hasLoadedProgress.current) {
+      return;
+    }
+    void api
+      .put(`/study-sets/${id}/progress`, {
+        currentIndex: nextIndex,
+        completedIds: Array.from(nextCompleted),
+      })
+      .catch(() => {
+        // Bỏ qua lỗi lưu tiến độ, không chặn trải nghiệm học.
+      });
+  }
+
+  function resetProgress(): void {
+    if (user && id) {
+      void api.delete(`/study-sets/${id}/progress`).catch(() => {});
+    }
+  }
 
   const current = cards[index];
   const progress = useMemo(() => {
@@ -51,6 +103,21 @@ export function LearnPage() {
 
   function goNext(): void {
     setFlipped(false);
+    setResumed(false);
+    if (current) {
+      const nextCompleted = new Set(completedIds);
+      nextCompleted.add(current.id);
+      setCompletedIds(nextCompleted);
+      if (index >= cards.length - 1) {
+        setFinished(true);
+        persistProgress(index, nextCompleted);
+        return;
+      }
+      const nextIndex = index + 1;
+      setIndex(nextIndex);
+      persistProgress(nextIndex, nextCompleted);
+      return;
+    }
     if (index >= cards.length - 1) {
       setFinished(true);
       return;
@@ -61,7 +128,10 @@ export function LearnPage() {
   function goPrev(): void {
     setFinished(false);
     setFlipped(false);
-    setIndex((prev) => Math.max(0, prev - 1));
+    setResumed(false);
+    const nextIndex = Math.max(0, index - 1);
+    setIndex(nextIndex);
+    persistProgress(nextIndex, completedIds);
   }
 
   function onShuffle(): void {
@@ -69,6 +139,18 @@ export function LearnPage() {
     setIndex(0);
     setFlipped(false);
     setFinished(false);
+    setResumed(false);
+    setCompletedIds(new Set());
+    resetProgress();
+  }
+
+  function onRestart(): void {
+    setIndex(0);
+    setFlipped(false);
+    setFinished(false);
+    setResumed(false);
+    setCompletedIds(new Set());
+    resetProgress();
   }
 
   if (loading) {
@@ -98,11 +180,7 @@ export function LearnPage() {
         <div className="flex flex-wrap justify-center gap-3">
           <button
             type="button"
-            onClick={() => {
-              setIndex(0);
-              setFlipped(false);
-              setFinished(false);
-            }}
+            onClick={onRestart}
             className="rounded-lg bg-teal-600 px-4 py-2 text-white font-medium"
           >
             Học lại
@@ -133,6 +211,12 @@ export function LearnPage() {
           Xáo trộn
         </button>
       </div>
+
+      {resumed ? (
+        <p className="rounded-lg bg-teal-50 px-4 py-2 text-sm text-teal-700">
+          Đã khôi phục tiến độ học trước đó của bạn.
+        </p>
+      ) : null}
 
       <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
         <div

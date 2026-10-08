@@ -7,6 +7,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { StudySetsModule } from './study-sets/study-sets.module';
 import { FlashcardsModule } from './flashcards/flashcards.module';
 import { AdminModule } from './admin/admin.module';
+import { StudyProgressModule } from './study-progress/study-progress.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AdminModule } from './admin/admin.module';
     StudySetsModule,
     FlashcardsModule,
     AdminModule,
+    StudyProgressModule,
   ],
 })
 export class AppModule {}
