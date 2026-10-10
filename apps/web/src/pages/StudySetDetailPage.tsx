@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { MathContent } from '../components/MathContent';
 import type { StudySetDetail } from '../types';
 
 export function StudySetDetailPage() {
@@ -104,21 +105,17 @@ export function StudySetDetailPage() {
               key={card.id}
               className="grid gap-3 px-4 py-4 md:grid-cols-2"
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wide text-slate-400">
                   {index + 1}. Thuật ngữ
                 </p>
-                <p className="mt-1 font-medium whitespace-pre-wrap">
-                  {card.front}
-                </p>
+                <MathContent content={card.front} className="mt-1 font-medium" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wide text-slate-400">
                   Định nghĩa
                 </p>
-                <p className="mt-1 text-slate-700 whitespace-pre-wrap">
-                  {card.back}
-                </p>
+                <MathContent content={card.back} className="mt-1 text-slate-700" />
               </div>
             </li>
           ))}

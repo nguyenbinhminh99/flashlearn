@@ -42,3 +42,163 @@ textarea,
 select {
   font: inherit;
 }
+
+.math-content {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.math-content .katex-display {
+  max-width: 100%;
+  margin: 0.5em 0;
+  padding-block: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: normal;
+}
+
+.math-content .katex-error {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.math-input-dialog {
+  width: min(32rem, calc(100% - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  color: var(--color-ink);
+  background: var(--color-card);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 0.25);
+  overflow: hidden;
+}
+
+.math-input-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.math-input-dialog::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+
+.math-input-header,
+.math-input-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+}
+
+.math-input-header { border-bottom: 1px solid var(--color-border); }
+.math-input-footer { border-top: 1px solid var(--color-border); }
+.math-input-body { min-height: 0; padding: 1rem 1.25rem; overflow-y: auto; }
+
+.math-input-field math-field {
+  display: block;
+  min-height: 4.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  font-size: 1.5rem;
+  --caret-color: var(--color-accent-dark);
+  --selection-background-color: #ccfbf1;
+}
+
+.math-input-field math-field::part(menu-toggle),
+.math-input-field math-field::part(virtual-keyboard-toggle) { display: none; }
+
+.math-input-keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.375rem; }
+.math-input-key {
+  min-height: 2.75rem;
+  min-width: 0;
+  padding: 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 0.875rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.math-input-key:active { background: #ccfbf1; }
+.math-input-key:focus-visible { outline: 2px solid var(--color-accent-dark); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .math-input-dialog { width: 100%; max-height: calc(100dvh - 0.75rem); margin: auto auto 0; border-radius: 1.25rem 1.25rem 0 0; }
+  .math-input-header, .math-input-footer { padding: 0.75rem 1rem; }
+  .math-input-body { padding: 0.75rem 1rem; }
+}
+
+.learn-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 1rem;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  perspective: 1200px;
+}
+
+.learn-card:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 5px;
+}
+
+.learn-card__inner {
+  display: grid;
+  min-height: 18rem;
+  transform-style: preserve-3d;
+  transition: transform 500ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.learn-card__inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+/* Both faces determine height, so long answers do not get clipped mid-flip. */
+.learn-card__face {
+  display: block;
+  grid-area: 1 / 1;
+  min-width: 0;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, white, #f0fdfa);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: box-shadow 180ms ease;
+}
+
+.learn-card__face--back {
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+  transform: rotateY(180deg);
+}
+
+@media (hover: hover) {
+  .learn-card:hover .learn-card__face {
+    box-shadow: 0 8px 24px rgb(15 23 42 / 0.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-card__inner,
+  .learn-card__face {
+    transition: none;
+  }
+}

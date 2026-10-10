@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { MathContent } from '../components/MathContent';
 import type { Flashcard, StudySetDetail } from '../types';
 
 interface StudyProgress {
@@ -229,23 +230,41 @@ export function LearnPage() {
       </p>
 
       <button
+        key={current?.id}
         type="button"
         onClick={() => setFlipped((v) => !v)}
-        className="group w-full min-h-72 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-teal-50 p-8 text-left shadow-sm transition hover:shadow-md"
+        aria-label={flipped ? 'Lật thẻ về mặt trước' : 'Lật thẻ để xem mặt sau'}
+        aria-describedby={flipped ? 'learn-card-back' : 'learn-card-front'}
+        aria-pressed={flipped}
+        className="learn-card"
       >
-        <p className="text-xs uppercase tracking-[0.2em] text-teal-700">
-          {flipped ? 'Mặt sau' : 'Mặt trước'} · nhấn để lật
-        </p>
-        <p className="mt-6 text-2xl sm:text-3xl font-semibold whitespace-pre-wrap">
-          {flipped ? current?.back : current?.front}
-        </p>
-        {flipped && current?.imageUrl ? (
-          <img
-            src={current.imageUrl}
-            alt=""
-            className="mt-6 max-h-40 rounded-lg object-contain"
-          />
-        ) : null}
+        <span className={`learn-card__inner${flipped ? ' is-flipped' : ''}`}>
+          <span id="learn-card-front" className="learn-card__face learn-card__face--front" aria-hidden={flipped} inert={flipped}>
+            <span className="block text-xs uppercase tracking-[0.2em] text-teal-700">
+              Mặt trước · nhấn để lật
+            </span>
+            <MathContent
+              content={current?.front ?? ''}
+              className="mt-6 text-2xl sm:text-3xl font-semibold"
+            />
+          </span>
+          <span id="learn-card-back" className="learn-card__face learn-card__face--back" aria-hidden={!flipped} inert={!flipped}>
+            <span className="block text-xs uppercase tracking-[0.2em] text-teal-700">
+              Mặt sau · nhấn để lật
+            </span>
+            <MathContent
+              content={current?.back ?? ''}
+              className="mt-6 text-2xl sm:text-3xl font-semibold"
+            />
+            {current?.imageUrl ? (
+              <img
+                src={current.imageUrl}
+                alt=""
+                className="mt-6 max-h-40 rounded-lg object-contain"
+              />
+            ) : null}
+          </span>
+        </span>
       </button>
 
       <div className="flex justify-between gap-3">

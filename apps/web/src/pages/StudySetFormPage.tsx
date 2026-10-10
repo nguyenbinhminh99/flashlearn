@@ -1,9 +1,129 @@
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { api } from '../lib/api';
+import { MathContent } from '../components/MathContent';
 import type { Category, Flashcard, StudySetDetail } from '../types';
+
+const FRONT_MAX_LENGTH = 500;
+const BACK_MAX_LENGTH = 2000;
+const MathInputDialog = lazy(() => import('../components/MathInputDialog'));
+
+interface MathInsertion {
+  readonly start: number;
+  readonly end: number;
+  readonly initialLatex: string;
+  readonly display: boolean;
+}
+
+interface FlashcardContentFieldProps {
+  readonly id: string;
+  readonly label: string;
+  readonly value: string;
+  readonly maxLength: number;
+  readonly onChange: (value: string) => void;
+}
+
+function FlashcardContentField({
+  id,
+  label,
+  value,
+  maxLength,
+  onChange,
+}: FlashcardContentFieldProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [insertion, setInsertion] = useState<MathInsertion | null>(null);
+
+  function openMathInput(): void {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end);
+    const inline = selected.match(/^\\\(([\s\S]*)\\\)$/);
+    const block = selected.match(/^\$\$([\s\S]*)\$\$$/) ?? selected.match(/^\\\[([\s\S]*)\\\]$/);
+    setInsertion({ start, end, initialLatex: inline?.[1] ?? block?.[1] ?? '', display: Boolean(block) });
+  }
+
+  function restoreCursor(start: number, end = start): void {
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(start, end);
+    });
+  }
+
+  function insertFormula(source: string): void {
+    if (!insertion) return;
+    const next = value.slice(0, insertion.start) + source + value.slice(insertion.end);
+    if (next.length > maxLength) return;
+    onChange(next);
+    setInsertion(null);
+    restoreCursor(insertion.start + source.length);
+  }
+
+  return (
+    <div className="min-w-0 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label
+          htmlFor={id}
+          className="block text-xs uppercase tracking-wide text-slate-500"
+        >
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={openMathInput}
+          disabled={Boolean(insertion)}
+          aria-label={`Chèn công thức vào ${label}`}
+          aria-haspopup="dialog"
+          className="min-h-11 rounded-md border border-teal-200 bg-teal-50 px-2.5 py-1.5 text-xs font-medium text-teal-800 hover:bg-teal-100 disabled:opacity-50"
+        >
+          <span aria-hidden="true" className="mr-1">ƒx</span> Chèn công thức
+        </button>
+      </div>
+      <textarea
+        ref={textareaRef}
+        id={id}
+        rows={3}
+        value={value}
+        maxLength={maxLength}
+        disabled={Boolean(insertion)}
+        aria-describedby={`math-syntax-help ${id}-count`}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2"
+      />
+      <p id={`${id}-count`} className="text-right text-xs text-slate-500">
+        {value.length}/{maxLength} ký tự
+      </p>
+      <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <p className="mb-2 text-xs font-medium text-slate-500">Xem trước</p>
+        {value.trim() ? (
+          <MathContent content={value} className="text-sm text-slate-700" />
+        ) : (
+          <p className="text-sm text-slate-400">Nội dung sẽ hiển thị tại đây.</p>
+        )}
+      </div>
+      {insertion ? (
+        <Suspense fallback={<p role="status" className="text-sm text-teal-700">Đang mở bàn phím toán…</p>}>
+          <MathInputDialog
+            label={label}
+            initialLatex={insertion.initialLatex}
+            initialDisplay={insertion.display}
+            replacing={insertion.start !== insertion.end}
+            availableLength={maxLength - value.length + insertion.end - insertion.start}
+            beforeContent={value.slice(0, insertion.start)}
+            afterContent={value.slice(insertion.end)}
+            onInsert={insertFormula}
+            onClose={() => { setInsertion(null); restoreCursor(insertion.start, insertion.end); }}
+          />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
 
 interface DraftCard {
   readonly key: string;
@@ -102,6 +222,16 @@ export function StudySetFormPage() {
     );
     if (validCards.length === 0) {
       setError('Cần ít nhất một flashcard hợp lệ.');
+      return;
+    }
+    if (
+      validCards.some((card) =>
+        card.front.length > FRONT_MAX_LENGTH || card.back.length > BACK_MAX_LENGTH,
+      )
+    ) {
+      setError(
+        'Mặt trước tối đa 500 ký tự, mặt sau tối đa 2.000 ký tự (bao gồm mã LaTeX).',
+      );
       return;
     }
     setSaving(true);
@@ -236,6 +366,21 @@ export function StudySetFormPage() {
             + Thêm thẻ
           </button>
         </div>
+        <div
+          id="math-syntax-help"
+          className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-slate-700"
+        >
+          <p className="font-medium">Nhập công thức toán</p>
+          <p className="mt-1">Bấm “Chèn công thức” cạnh Thuật ngữ hoặc Định nghĩa để mở bàn phím toán. Đặt con trỏ tại chỗ cần chèn, hoặc chọn một công thức để sửa.</p>
+          <p className="mt-1">
+            Trong dòng: <code>{'\\(a^2 + b^2 = c^2\\)'}</code>. Riêng dòng:{' '}
+            <code>{'$$\\frac{a}{b}$$'}</code> hoặc <code>{'\\[\\frac{a}{b}\\]'}</code>.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Có thể kết hợp văn bản và công thức. Công thức chưa hợp lệ sẽ hiển thị mã màu đỏ;
+            công thức chưa đóng dấu phân cách sẽ hiển thị nguyên văn.
+          </p>
+        </div>
         {cards.map((card, index) => (
           <div
             key={card.key}
@@ -244,28 +389,20 @@ export function StudySetFormPage() {
             <div className="text-sm font-semibold text-slate-400 pt-2">
               {index + 1}
             </div>
-            <label className="block space-y-1">
-              <span className="text-xs uppercase tracking-wide text-slate-500">
-                Thuật ngữ
-              </span>
-              <textarea
-                rows={2}
-                value={card.front}
-                onChange={(e) => updateCard(card.key, 'front', e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs uppercase tracking-wide text-slate-500">
-                Định nghĩa
-              </span>
-              <textarea
-                rows={2}
-                value={card.back}
-                onChange={(e) => updateCard(card.key, 'back', e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            </label>
+            <FlashcardContentField
+              id={`card-${card.key}-front`}
+              label="Thuật ngữ"
+              value={card.front}
+              maxLength={FRONT_MAX_LENGTH}
+              onChange={(value) => updateCard(card.key, 'front', value)}
+            />
+            <FlashcardContentField
+              id={`card-${card.key}-back`}
+              label="Định nghĩa"
+              value={card.back}
+              maxLength={BACK_MAX_LENGTH}
+              onChange={(value) => updateCard(card.key, 'back', value)}
+            />
             <button
               type="button"
               onClick={() =>
