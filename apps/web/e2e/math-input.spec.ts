@@ -1,17 +1,23 @@
 import { expect, test } from '@playwright/test';
 
-test('Chèn công thức vào đúng textarea, sửa lựa chọn, hủy và kiểm tra mobile', async ({ page }, testInfo) => {
+test('Chèn công thức vào đúng textarea, sửa lựa chọn, hủy và kiểm tra mobile', async ({ page, baseURL }, testInfo) => {
   const runtimeErrors: string[] = [];
   const externalRequests: string[] = [];
+  const allowedOrigins = new Set([
+    new URL(baseURL!).origin,
+    new URL(process.env.E2E_API_URL ?? '/api', baseURL).origin,
+  ]);
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   page.on('request', (request) => {
-    if (/^https?:/.test(request.url()) && !['localhost', '127.0.0.1'].includes(new URL(request.url()).hostname)) externalRequests.push(request.url());
+    if (/^https?:/.test(request.url()) && !allowedOrigins.has(new URL(request.url()).origin)) externalRequests.push(request.url());
   });
-  await page.goto('/login');
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
+  await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
   await page.getByLabel('Email', { exact: true }).fill(process.env.E2E_EMAIL ?? 'demo@flashlearn.local');
   await page.getByLabel('Mật khẩu', { exact: true }).fill(process.env.E2E_PASSWORD ?? 'User1234');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: Number(process.env.E2E_LOGIN_TIMEOUT ?? 10_000) });
   await page.getByRole('link', { name: '+ Tạo Study Set', exact: true }).click();
   const front = page.getByLabel('Thuật ngữ', { exact: true }).first();
   const back = page.getByLabel('Định nghĩa', { exact: true }).first();

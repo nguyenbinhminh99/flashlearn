@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 
 test('MVP 1: đăng nhập → tạo bộ thẻ → học → sửa → xóa → đăng xuất', async ({ page, request }, testInfo) => {
+  const apiBaseURL = (process.env.E2E_API_URL ?? '/api').replace(/\/$/, '');
   const title = `E2E MVP 1 ${randomUUID()}`;
   const cards = [
     { front: 'Định lý Pythagoras', back: 'Tam giác vuông: \\(a^2 + b^2 = c^2\\)' },
@@ -42,11 +43,13 @@ test('MVP 1: đăng nhập → tạo bộ thẻ → học → sửa → xóa →
 
   try {
     await test.step('Đăng nhập tài khoản demo qua UI và mở Dashboard', async () => {
-      await page.goto('/login');
+      await page.goto('/');
+      await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
+      await expect(page.getByLabel('Email', { exact: true })).toBeVisible();
       await page.getByLabel('Email', { exact: true }).fill(process.env.E2E_EMAIL ?? 'demo@flashlearn.local');
       await page.getByLabel('Mật khẩu', { exact: true }).fill(process.env.E2E_PASSWORD ?? 'User1234');
       await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page).toHaveURL(/\/dashboard$/, { timeout: Number(process.env.E2E_LOGIN_TIMEOUT ?? 10_000) });
       await expect(page.getByRole('heading', { name: 'Bộ thẻ của tôi' })).toBeVisible();
       token = await page.evaluate(() => localStorage.getItem('flashlearn_token'));
       expect(token).toBeTruthy();
@@ -82,7 +85,7 @@ test('MVP 1: đăng nhập → tạo bộ thẻ → học → sửa → xóa →
       await expect(page).toHaveURL(new RegExp(`/study-sets/${studySetId}$`));
       await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
       await expect(page.getByText('3 flashcard', { exact: true })).toBeVisible();
-      const detail = await request.get(`/api/study-sets/${studySetId}`, {
+      const detail = await request.get(`${apiBaseURL}/study-sets/${studySetId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       expect(detail.ok()).toBeTruthy();
@@ -208,7 +211,7 @@ test('MVP 1: đăng nhập → tạo bộ thẻ → học → sửa → xóa →
   } finally {
     // Only deletes the unique set created by this run, including after a failed assertion.
     if (studySetId && token) {
-      const cleanup = await request.delete(`/api/study-sets/${studySetId}`, {
+      const cleanup = await request.delete(`${apiBaseURL}/study-sets/${studySetId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       expect([200, 404]).toContain(cleanup.status());

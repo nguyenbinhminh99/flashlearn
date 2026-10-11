@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
@@ -19,22 +20,23 @@ function getErrorMessage(error: unknown): string {
 
 export function RegisterPage() {
   const { register } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    setError('');
+    toast.dismiss();
     setSubmitting(true);
     try {
       await register(email, password, displayName);
+      toast.success('Tạo tài khoản thành công! Chào mừng bạn đến với FlashLearn.');
       navigate('/dashboard');
     } catch (err) {
-      setError(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -81,7 +83,6 @@ export function RegisterPage() {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-teal-600"
           />
         </label>
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <button
           type="submit"
           disabled={submitting}

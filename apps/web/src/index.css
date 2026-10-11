@@ -31,6 +31,19 @@ body {
   min-height: 100vh;
 }
 
+.toast {
+  animation: toast-in 180ms ease-out;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
 a {
   color: inherit;
   text-decoration: none;

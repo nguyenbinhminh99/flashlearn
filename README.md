@@ -112,5 +112,8 @@ E2E_BROWSER_CHANNEL=chromium npm run test:e2e
 ```
 
 Có thể đặt `E2E_EMAIL` và `E2E_PASSWORD` để dùng tài khoản test khác;
-`E2E_BASE_URL` để dùng frontend đang chạy sẵn. Báo cáo HTML và ảnh desktop/mobile
+`E2E_BASE_URL` để dùng frontend đang chạy sẵn; `E2E_API_URL` để trỏ tới API khác origin
+(ví dụ `https://flashlearn-api-891n.onrender.com/api`). `E2E_LOGIN_TIMEOUT` đặt thời gian
+chờ đăng nhập bằng mili giây khi backend cần cold start (mặc định `10000`). Test MVP tạo rồi xóa bộ thẻ
+riêng tư với tên ngẫu nhiên, chỉ dọn dữ liệu do chính lượt test tạo. Báo cáo HTML và ảnh desktop/mobile
 nằm trong `apps/web/playwright-report` và `apps/web/test-results` (không commit).
